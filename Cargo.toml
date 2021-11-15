@@ -1,0 +1,16 @@
+[package]
+name = "pica"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = { version = "0.4.19", features = ["serde"] }
+hex = "0.4.3"
+hmac = "0.11.0"
+rand = "0.8.4"
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = "1.0.70"
+sha2 = "0.9.8"
+ureq = { version = "2.3.0", features = ["json", "charset", "socks-proxy"] }
+
+[features]
