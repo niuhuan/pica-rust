@@ -1,13 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use crate::{Client, ComicInfo, Error};
+    use crate::Client;
 
     #[test]
     fn it_works() {
         // init client
         let mut c = Client::new();
         // set proxy
-        c.set_proxy(Option::Some("socks5://127.1:1080/"));
+        match c.set_proxy(Option::Some("socks5://127.1:1080/"), None) {
+            Ok(_) => {
+                println!("PROXY OK");
+            }
+            Err(err) => {
+                println!("PROXY ERROR : {}", err);
+                return;
+            }
+        }
         // login
         match c.login("username", "password") {
             Ok(_) => {
