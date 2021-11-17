@@ -131,13 +131,13 @@ impl Client {
                             .ok_or("message error")?
                             .as_str()
                             .ok_or("message error")?;
-                        Err(Error::from(message))
+                        Err(Box::new(Error::from(message)))
                     }
                 }
             }
 
             Err(err) => {
-                Err(Error::from(err.to_string()))
+                Err(Box::new(Error::from(err.to_string())))
             }
         }
     }
