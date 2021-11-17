@@ -133,6 +133,13 @@ pub struct ComicEpsResponseData {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ComicEpPicturePageResponseData {
+    pub pages: PageData<ComicEpPicture>,
+    // pub ep: ComicEp // no order, todo
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Image {
     pub original_name: String,
     pub path: String,
@@ -210,6 +217,14 @@ pub struct Creator {
     pub slogan: String,
     pub role: String,
     pub character: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComicEpPicture {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub media: Image,
 }
 
 fn avatar_default() -> Image {

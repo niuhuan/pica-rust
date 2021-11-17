@@ -192,65 +192,42 @@ impl Client {
     /// 漫画分页
     pub fn comics(
         &self,
-        category: Option<&str>,
-        tag: Option<&str>,
-        creator_id: Option<&str>,
-        chinese_team: Option<&str>,
+        category: Option<String>,
+        tag: Option<String>,
+        creator_id: Option<String>,
+        chinese_team: Option<String>,
         sort: Sort,
         page: i32,
     ) -> Result<PageData<ComicSimple>> {
-        let mut url = vec![];
-        url.push("comics?");
-
-        let value_category;
-        match category {
-            None => {}
+        let mut url: Vec<String> = vec![];
+        url.push("comics?".to_string());
+        url.push(match category {
+            None => { "".to_string() }
             Some(category) => {
-                value_category = urlencoding::encode(category);
-                url.push("c=");
-                url.push(value_category.as_ref());
-                url.push("&");
+                format!("c={}&", urlencoding::encode(category.as_str()).as_ref())
             }
-        }
-
-        let value_tag;
-        match tag {
-            None => {}
+        });
+        url.push(match tag {
+            None => { "".to_string() }
             Some(tag) => {
-                value_tag = urlencoding::encode(tag);
-                url.push("t=");
-                url.push(value_tag.as_ref());
-                url.push("&");
+                format!("t={}&", urlencoding::encode(tag.as_str()).as_ref())
             }
-        }
-        match creator_id {
-            None => {}
+        });
+        url.push(match creator_id {
+            None => { "".to_string() }
             Some(creator_id) => {
-                url.push("&ca=");
-                url.push(creator_id);
-                url.push("&");
+                format!("&ca={}&", creator_id.as_str())
             }
-        }
-
-        let value_chinese_team;
-        match chinese_team {
-            None => {}
-            Some(chinese_team) => {
-                value_chinese_team = urlencoding::encode(chinese_team);
-                url.push("&t=");
-                url.push(value_chinese_team.as_ref());
-                url.push("&");
+        });
+        url.push(match chinese_team {
+            None => { "".to_string() }
+            Some(ct) => {
+                format!("ct={}&", urlencoding::encode(ct.as_str()).as_ref())
             }
-        }
-
-        url.push("s=");
-        url.push(sort.as_str());
-        url.push("&");
-
-        let page_str = page.to_string();
-        url.push("page=");
-        url.push(page_str.as_str());
-
+        });
+        url.push(
+            format!("s={}&page={}", sort.as_str(), page.to_string())
+        );
         let url: String = url.join("");
         let data: ComicPageResponseData = self.pica_get(url.as_str())?;
         Ok(data.comics)
@@ -279,5 +256,13 @@ impl Client {
             format!("comics/{}/eps?page={}", comic_id, page).as_str()
         )?;
         Ok(data.eps)
+    }
+
+    /// 获取EP图片(分页)
+    pub fn comic_ep_pictures(&self, comic_id: String, ep_order: i32, page: i32) -> Result<PageData<ComicEpPicture>> {
+        let data: ComicEpPicturePageResponseData = self.pica_get(
+            format!("comics/{}/order/{}/pages?page={}", comic_id, ep_order, page).as_str()
+        )?;
+        return Ok(data.pages);
     }
 }

@@ -99,7 +99,7 @@ mod tests {
         // }
 
         // 测试 漫画信息
-        // match c.comic_info("6073235eb978f81d68ef48db".to_string()) {
+        // match c.comic_info("5b6bdf4558ed442d899486b7".to_string()) {
         //     Ok(info) => {
         //         println!("{}", serde_json::to_string(&info).unwrap_or("".to_string()));
         //     }
@@ -110,9 +110,20 @@ mod tests {
         // };
 
         // 测试 漫画EP
-        // match c.comic_eps("6073235eb978f81d68ef48db".to_string(), 1) {
+        // match c.comic_eps("5b6bdf4558ed442d899486b7".to_string(), 1) {
         //     Ok(eps) => {
         //         println!("{}", serde_json::to_string(&eps).unwrap_or("".to_string()));
+        //     }
+        //     Err(err) => {
+        //         println!("{}", err);
+        //         return;
+        //     }
+        // };
+
+        // 测试 EP图片
+        // match c.comic_ep_pictures("5b6bdf4558ed442d899486b7".to_string(), 1, 1) {
+        //     Ok(pictures) => {
+        //         println!("{}", serde_json::to_string(&pictures).unwrap_or("".to_string()));
         //     }
         //     Err(err) => {
         //         println!("{}", err);
