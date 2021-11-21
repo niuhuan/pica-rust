@@ -8,9 +8,7 @@ pub struct Error {
 
 impl Error {
     pub fn with_string(string: String) -> Self {
-        Self {
-            message: string,
-        }
+        Self { message: string }
     }
     pub fn with_str(str: &str) -> Self {
         Self::with_string(str.to_string())

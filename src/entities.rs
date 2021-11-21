@@ -1,7 +1,7 @@
 extern crate serde;
 
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub struct Sort(&'static str);
 
@@ -235,4 +235,6 @@ fn avatar_default() -> Image {
     }
 }
 
-fn default_string() -> String { "".to_string() }
+fn default_string() -> String {
+    "".to_string()
+}

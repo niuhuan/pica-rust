@@ -130,5 +130,16 @@ mod tests {
         //         return;
         //     }
         // };
+
+        // 测试 收藏的漫画
+        // match c.favourite_comics(Sort::SORT_DEFAULT, 1) {
+        //     Ok(data) => {
+        //         println!("{}", serde_json::to_string(&data).unwrap_or("".to_string()));
+        //     }
+        //     Err(err) => {
+        //         println!("{}", err);
+        //         return;
+        //     }
+        // }
     }
 }

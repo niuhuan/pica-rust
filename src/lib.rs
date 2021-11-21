@@ -3,11 +3,14 @@ mod hmac;
 mod test;
 mod types;
 
-use std::net::{SocketAddr};
 pub use crate::entities::*;
 pub use crate::types::*;
 
+use regex::Regex;
+use std::net::SocketAddr;
+
 use chrono::prelude::Local;
+use reqwest::CustomerDnsOverridesResolver;
 use serde_json::json;
 
 const HOST_URL: &str = "https://picaapi.picacomic.com/";
@@ -15,9 +18,20 @@ const API_KEY: &str = "C69BAF41DA5ABD1FFEDC6D2FEA56B";
 const NONCE: &str = "b1ab87b4800d4d4590a11701b8551afa";
 const DIGEST_KEY: &str = "~d}$Q7$eIni=V)9\\RK/P.RM4;9[7|@/CA}b~OW!3?EV`:<>M7pddUBL5n|0/*Cn";
 
-const SWITCH_ADDRESS_HOSTS: [&str; 1] = [
-    "picaapi.picacomic.com",
-];
+struct DnsOverridesResolver {
+    regexp: Regex,
+    addr: SocketAddr,
+}
+
+impl CustomerDnsOverridesResolver for DnsOverridesResolver {
+    fn resolve(&self, domain: &str) -> Option<SocketAddr> {
+        if self.regexp.is_match(domain) {
+            Some(self.addr)
+        } else {
+            None
+        }
+    }
+}
 
 /// 客户端
 pub struct Client {
@@ -31,38 +45,40 @@ impl Client {
     /// 构造方法
     pub fn new() -> Self {
         Self {
-            agent: Client::request_agent(None, None).unwrap(),
+            agent: reqwest::blocking::ClientBuilder::new().build().unwrap(),
             token: "".to_string(),
             switch_ip: Option::None,
         }
     }
 
     /// 代理和分流
-    fn request_agent(url: Option<&str>, switch_address: Option<SwitchAddress>) -> Result<reqwest::blocking::Client> {
+    fn request_agent(
+        &self,
+        url: Option<&str>,
+        switch_address: Option<SwitchAddress>,
+    ) -> Result<reqwest::blocking::Client> {
         let mut builder = reqwest::blocking::ClientBuilder::new();
         builder = match url {
-            None => { builder }
-            Some(url) => {
-                builder.proxy(reqwest::Proxy::all(url)?)
-            }
+            None => builder,
+            Some(url) => builder.proxy(reqwest::Proxy::all(url)?),
         };
         builder = match switch_address {
-            None => { builder }
-            Some(address) => {
-                let address: SocketAddr = address.as_str().parse()?;
-                let mut tmp = builder;
-                for x in SWITCH_ADDRESS_HOSTS {
-                    tmp = tmp.resolve(x, address);
-                }
-                tmp
-            }
+            None => builder,
+            Some(address) => builder.resolver(Box::new(DnsOverridesResolver {
+                regexp: Regex::new(r"(.+\.)?picacomic\.com").unwrap(),
+                addr: address.as_str().parse()?,
+            })),
         };
         Ok(builder.build()?)
     }
 
     /// 设置代理和分流
-    pub fn set_proxy(&mut self, url: Option<&str>, switch_address: Option<SwitchAddress>) -> Result<()> {
-        self.agent = Client::request_agent(url, switch_address)?;
+    pub fn set_proxy(
+        &mut self,
+        url: Option<&str>,
+        switch_address: Option<SwitchAddress>,
+    ) -> Result<()> {
+        self.agent = self.request_agent(url, switch_address)?;
         Ok(())
     }
 
@@ -98,7 +114,7 @@ impl Client {
                         .to_lowercase()
                         .as_str(),
                 )
-                    .as_str(),
+                .as_str(),
             );
         let resp = match body {
             None => request.send(),
@@ -110,21 +126,17 @@ impl Client {
                 let json: serde_json::Value = serde_json::from_str(resp.text()?.as_str())?;
                 // println!("{}", &json); // when debug
                 match status.as_u16() {
-                    200 => {
-                        match path {
-                            "auth/register" => {
-                                Ok(serde_json::from_str("null")?)
-                            }
-                            _ => {
-                                let v = json
-                                    .get("data")
-                                    .ok_or(Error::from("response data error"))?
-                                    .clone();
-                                let r = serde_json::from_value(v)?;
-                                Ok(r)
-                            }
+                    200 => match path {
+                        "auth/register" => Ok(serde_json::from_str("null")?),
+                        _ => {
+                            let v = json
+                                .get("data")
+                                .ok_or(Error::from("response data error"))?
+                                .clone();
+                            let r = serde_json::from_value(v)?;
+                            Ok(r)
                         }
-                    }
+                    },
                     _ => {
                         let message = json
                             .get("message")
@@ -136,17 +148,12 @@ impl Client {
                 }
             }
 
-            Err(err) => {
-                Err(Box::new(Error::from(err.to_string())))
-            }
+            Err(err) => Err(Box::new(Error::from(err.to_string()))),
         }
     }
 
     /// Get
-    fn pica_get<T: for<'de> serde::Deserialize<'de>>(
-        &self,
-        path: &str,
-    ) -> Result<T> {
+    fn pica_get<T: for<'de> serde::Deserialize<'de>>(&self, path: &str) -> Result<T> {
         return self.pica_request(reqwest::Method::GET, path, None);
     }
 
@@ -202,32 +209,30 @@ impl Client {
         let mut url: Vec<String> = vec![];
         url.push("comics?".to_string());
         url.push(match category {
-            None => { "".to_string() }
+            None => "".to_string(),
             Some(category) => {
                 format!("c={}&", urlencoding::encode(category.as_str()).as_ref())
             }
         });
         url.push(match tag {
-            None => { "".to_string() }
+            None => "".to_string(),
             Some(tag) => {
                 format!("t={}&", urlencoding::encode(tag.as_str()).as_ref())
             }
         });
         url.push(match creator_id {
-            None => { "".to_string() }
+            None => "".to_string(),
             Some(creator_id) => {
                 format!("&ca={}&", creator_id.as_str())
             }
         });
         url.push(match chinese_team {
-            None => { "".to_string() }
+            None => "".to_string(),
             Some(ct) => {
                 format!("ct={}&", urlencoding::encode(ct.as_str()).as_ref())
             }
         });
-        url.push(
-            format!("s={}&page={}", sort.as_str(), page.to_string())
-        );
+        url.push(format!("s={}&page={}", sort.as_str(), page.to_string()));
         let url: String = url.join("");
         let data: ComicPageResponseData = self.pica_get(url.as_str())?;
         Ok(data.comics)
@@ -241,28 +246,38 @@ impl Client {
 
     /// 漫画信息
     pub fn comic_info(&self, comic_id: String) -> Result<ComicInfo> {
-        let data: ComicInfoResponseData =
-            self.pica_request(
-                reqwest::Method::GET,
-                format!("comics/{}", comic_id).as_str(),
-                None,
-            )?;
+        let data: ComicInfoResponseData = self.pica_request(
+            reqwest::Method::GET,
+            format!("comics/{}", comic_id).as_str(),
+            None,
+        )?;
         Ok(data.comic)
     }
 
     /// 获取漫画EP(分页)
     pub fn comic_eps(&self, comic_id: String, page: i32) -> Result<PageData<ComicEp>> {
-        let data: ComicEpsResponseData = self.pica_get(
-            format!("comics/{}/eps?page={}", comic_id, page).as_str()
-        )?;
+        let data: ComicEpsResponseData =
+            self.pica_get(format!("comics/{}/eps?page={}", comic_id, page).as_str())?;
         Ok(data.eps)
     }
 
     /// 获取EP图片(分页)
-    pub fn comic_ep_pictures(&self, comic_id: String, ep_order: i32, page: i32) -> Result<PageData<ComicEpPicture>> {
+    pub fn comic_ep_pictures(
+        &self,
+        comic_id: String,
+        ep_order: i32,
+        page: i32,
+    ) -> Result<PageData<ComicEpPicture>> {
         let data: ComicEpPicturePageResponseData = self.pica_get(
-            format!("comics/{}/order/{}/pages?page={}", comic_id, ep_order, page).as_str()
+            format!("comics/{}/order/{}/pages?page={}", comic_id, ep_order, page).as_str(),
         )?;
         return Ok(data.pages);
+    }
+
+    /// 收藏的漫画(分页)
+    pub fn favourite_comics(&self, sort: Sort, page: i32) -> Result<PageData<ComicSimple>> {
+        let url: String = format!("users/favourite?s={}&page={}", sort.as_str(), page);
+        let data: ComicPageResponseData = self.pica_get(url.as_str())?;
+        Ok(data.comics)
     }
 }
