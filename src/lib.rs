@@ -35,7 +35,7 @@ impl CustomerDnsOverridesResolver for DnsOverridesResolver {
 
 /// 客户端
 pub struct Client {
-    agent: reqwest::blocking::Client,
+    agent: reqwest::Client,
     pub token: String,
     pub switch_ip: Option<String>,
 }
@@ -45,7 +45,7 @@ impl Client {
     /// 构造方法
     pub fn new() -> Self {
         Self {
-            agent: reqwest::blocking::ClientBuilder::new().build().unwrap(),
+            agent: reqwest::ClientBuilder::new().build().unwrap(),
             token: "".to_string(),
             switch_ip: Option::None,
         }
@@ -56,8 +56,8 @@ impl Client {
         &self,
         url: Option<&str>,
         switch_address: Option<SwitchAddress>,
-    ) -> Result<reqwest::blocking::Client> {
-        let mut builder = reqwest::blocking::ClientBuilder::new();
+    ) -> Result<reqwest::Client> {
+        let mut builder = reqwest::ClientBuilder::new();
         builder = match url {
             None => builder,
             Some(url) => builder.proxy(reqwest::Proxy::all(url)?),
@@ -83,7 +83,7 @@ impl Client {
     }
 
     /// 请求和签名
-    fn pica_request<T: for<'de> serde::Deserialize<'de>>(
+    async fn pica_request<T: for<'de> serde::Deserialize<'de>>(
         &self,
         method: reqwest::Method,
         path: &str,
@@ -120,10 +120,11 @@ impl Client {
             None => request.send(),
             Some(body) => request.body(serde_json::to_string(&body)?).send(),
         };
+        let resp = resp.await;
         match resp {
             Ok(resp) => {
                 let status = resp.status();
-                let json: serde_json::Value = serde_json::from_str(resp.text()?.as_str())?;
+                let json: serde_json::Value = serde_json::from_str(resp.text().await?.as_str())?;
                 // println!("{}", &json); // when debug
                 match status.as_u16() {
                     200 => match path {
@@ -153,51 +154,56 @@ impl Client {
     }
 
     /// Get
-    fn pica_get<T: for<'de> serde::Deserialize<'de>>(&self, path: &str) -> Result<T> {
-        return self.pica_request(reqwest::Method::GET, path, None);
+    async fn pica_get<T: for<'de> serde::Deserialize<'de>>(&self, path: &str) -> Result<T> {
+        return self.pica_request(reqwest::Method::GET, path, None).await;
     }
 
     /// Post
-    fn pica_post<T: for<'de> serde::Deserialize<'de>>(
+    async fn pica_post<T: for<'de> serde::Deserialize<'de>>(
         &self,
         path: &str,
         body: serde_json::Value,
     ) -> Result<T> {
-        return self.pica_request(reqwest::Method::POST, path, Some(body));
+        return self
+            .pica_request(reqwest::Method::POST, path, Some(body))
+            .await;
     }
 
     /// 注册 (email为用户名, 不一定是邮箱)
-    pub fn register(&self, register_dto: RegisterDto) -> Result<()> {
+    pub async fn register(&self, register_dto: RegisterDto) -> Result<()> {
         self.pica_post("auth/register", serde_json::json!(register_dto))
+            .await
     }
 
     /// 用户登陆 (email为用户名, 不一定是邮箱)
-    pub fn login(&mut self, email: &str, password: &str) -> Result<()> {
-        let data: LoginResponseData = self.pica_post(
-            "auth/sign-in",
-            serde_json::json!({
-            "email": email,
-            "password": password,
-            }),
-        )?;
+    pub async fn login(&mut self, email: &str, password: &str) -> Result<()> {
+        let data: LoginResponseData = self
+            .pica_post(
+                "auth/sign-in",
+                serde_json::json!({
+                "email": email,
+                "password": password,
+                }),
+            )
+            .await?;
         self.token = data.token;
         Ok(())
     }
 
     /// 用户信息
-    pub fn user_profile(&self) -> Result<UserProfile> {
-        let data: UserProfileResponseData = self.pica_get("users/profile")?;
+    pub async fn user_profile(&self) -> Result<UserProfile> {
+        let data: UserProfileResponseData = self.pica_get("users/profile").await?;
         Ok(data.user)
     }
 
     /// 打卡
-    pub fn punch_in(&self) -> Result<PunchStatus> {
-        let data: PunchResponseData = self.pica_post("users/punch-in", json!({}))?;
+    pub async fn punch_in(&self) -> Result<PunchStatus> {
+        let data: PunchResponseData = self.pica_post("users/punch-in", json!({})).await?;
         Ok(data.res)
     }
 
     /// 漫画分页
-    pub fn comics(
+    pub async fn comics(
         &self,
         category: Option<String>,
         tag: Option<String>,
@@ -234,50 +240,55 @@ impl Client {
         });
         url.push(format!("s={}&page={}", sort.as_str(), page.to_string()));
         let url: String = url.join("");
-        let data: ComicPageResponseData = self.pica_get(url.as_str())?;
+        let data: ComicPageResponseData = self.pica_get(url.as_str()).await?;
         Ok(data.comics)
     }
 
     /// 随机漫画
-    pub fn comics_random(&self) -> Result<Vec<ComicSimple>> {
-        let data: ComicListResponseData = self.pica_get("comics/random")?;
+    pub async fn comics_random(&self) -> Result<Vec<ComicSimple>> {
+        let data: ComicListResponseData = self.pica_get("comics/random").await?;
         Ok(data.comics)
     }
 
     /// 漫画信息
-    pub fn comic_info(&self, comic_id: String) -> Result<ComicInfo> {
-        let data: ComicInfoResponseData = self.pica_request(
-            reqwest::Method::GET,
-            format!("comics/{}", comic_id).as_str(),
-            None,
-        )?;
+    pub async fn comic_info(&self, comic_id: String) -> Result<ComicInfo> {
+        let data: ComicInfoResponseData = self
+            .pica_request(
+                reqwest::Method::GET,
+                format!("comics/{}", comic_id).as_str(),
+                None,
+            )
+            .await?;
         Ok(data.comic)
     }
 
     /// 获取漫画EP(分页)
-    pub fn comic_eps(&self, comic_id: String, page: i32) -> Result<PageData<ComicEp>> {
-        let data: ComicEpsResponseData =
-            self.pica_get(format!("comics/{}/eps?page={}", comic_id, page).as_str())?;
+    pub async fn comic_eps(&self, comic_id: String, page: i32) -> Result<PageData<ComicEp>> {
+        let data: ComicEpsResponseData = self
+            .pica_get(format!("comics/{}/eps?page={}", comic_id, page).as_str())
+            .await?;
         Ok(data.eps)
     }
 
     /// 获取EP图片(分页)
-    pub fn comic_ep_pictures(
+    pub async fn comic_ep_pictures(
         &self,
         comic_id: String,
         ep_order: i32,
         page: i32,
     ) -> Result<PageData<ComicEpPicture>> {
-        let data: ComicEpPicturePageResponseData = self.pica_get(
-            format!("comics/{}/order/{}/pages?page={}", comic_id, ep_order, page).as_str(),
-        )?;
+        let data: ComicEpPicturePageResponseData = self
+            .pica_get(
+                format!("comics/{}/order/{}/pages?page={}", comic_id, ep_order, page).as_str(),
+            )
+            .await?;
         return Ok(data.pages);
     }
 
     /// 收藏的漫画(分页)
-    pub fn favourite_comics(&self, sort: Sort, page: i32) -> Result<PageData<ComicSimple>> {
+    pub async fn favourite_comics(&self, sort: Sort, page: i32) -> Result<PageData<ComicSimple>> {
         let url: String = format!("users/favourite?s={}&page={}", sort.as_str(), page);
-        let data: ComicPageResponseData = self.pica_get(url.as_str())?;
+        let data: ComicPageResponseData = self.pica_get(url.as_str()).await?;
         Ok(data.comics)
     }
 }
