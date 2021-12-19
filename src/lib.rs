@@ -130,6 +130,8 @@ impl Client {
                     200 => match path {
                         "auth/register" => Ok(serde_json::from_str("null")?),
                         _ => {
+                            let body = json.to_string();
+                            println!("{}", body);
                             let v = json
                                 .get("data")
                                 .ok_or(Error::from("response data error"))?
@@ -148,7 +150,6 @@ impl Client {
                     }
                 }
             }
-
             Err(err) => Err(Box::new(Error::from(err.to_string()))),
         }
     }
@@ -290,5 +291,23 @@ impl Client {
         let url: String = format!("users/favourite?s={}&page={}", sort.as_str(), page);
         let data: ComicPageResponseData = self.pica_get(url.as_str()).await?;
         Ok(data.comics)
+    }
+
+    /// 喜欢/取消喜欢漫画
+    pub async fn switch_like(&self, comic_id: String) -> Result<Action> {
+        let url: String = format!("comics/{}/like", comic_id);
+        Ok(self.pica_post(url.as_str(), json!({})).await?)
+    }
+
+    /// 收藏/取消收藏漫画
+    pub async fn switch_favourite(&self, comic_id: String) -> Result<Action> {
+        let url: String = format!("comics/{}/favourite", comic_id);
+        Ok(self.pica_post(url.as_str(), json!({})).await?)
+    }
+
+    /// 获取漫画的评论
+    pub async fn comic_comments(&self, comic_id: String, page: i32) -> Result<CommentsResponse> {
+        let url: String = format!("comics/{}/comments?page={}", comic_id, page);
+        Ok(self.pica_get(url.as_str()).await?)
     }
 }

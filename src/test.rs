@@ -129,4 +129,22 @@ mod tests {
                 .await,
         )
     }
+
+    #[tokio::test]
+    async fn switch_like() {
+        print(
+            create_client()
+                .switch_like("5b6bdf4558ed442d899486b7".to_string())
+                .await,
+        )
+    }
+
+    #[tokio::test]
+    async fn comic_comments() {
+        print(
+            create_client()
+                .comic_comments("5b6bdf4558ed442d899486b7".to_string(), 1)
+                .await,
+        )
+    }
 }

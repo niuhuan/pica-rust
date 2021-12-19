@@ -2,6 +2,7 @@ extern crate serde;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::num::ParseIntError;
 
 pub struct Sort(&'static str);
 
@@ -97,14 +98,37 @@ pub struct PunchStatus {
     punch_in_last_day: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageData<T> {
+    #[serde(deserialize_with = "fuzzy_i32")]
     pub total: i32,
+    #[serde(deserialize_with = "fuzzy_i32")]
     pub limit: i32,
+    #[serde(deserialize_with = "fuzzy_i32")]
     pub page: i32,
+    #[serde(deserialize_with = "fuzzy_i32")]
     pub pages: i32,
     pub docs: Vec<T>,
+}
+
+fn fuzzy_i32<'de, D>(d: D) -> std::result::Result<i32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: serde_json::Value = serde::Deserialize::deserialize(d)?;
+    if value.is_i64() {
+        Ok(value.as_i64().unwrap() as i32)
+    } else if value.is_string() {
+        let str = value.as_str().unwrap();
+        let from: std::result::Result<i32, ParseIntError> = std::str::FromStr::from_str(str);
+        match from {
+            Ok(from) => Ok(from),
+            Err(_) => Err(serde::de::Error::custom("parse error")),
+        }
+    } else {
+        Err(serde::de::Error::custom("type error"))
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -138,7 +162,7 @@ pub struct ComicEpPicturePageResponseData {
     // pub ep: ComicEp // no order, todo
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Image {
     pub original_name: String,
@@ -227,12 +251,70 @@ pub struct ComicEpPicture {
     pub media: Image,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Action {
+    #[serde(default = "default_string")]
+    pub action: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommentsResponse {
+    pub comments: PageData<Comment>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Comment {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub content: String,
+    #[serde(rename = "_user")]
+    pub user: CommentUser,
+    #[serde(rename = "isTop")]
+    pub is_top: bool,
+    pub hide: bool,
+    pub created_at: String,
+    #[serde(rename = "likesCount")]
+    pub likes_count: i64,
+    #[serde(rename = "commentsCount")]
+    pub comments_count: i64,
+    #[serde(rename = "isLiked")]
+    pub is_liked: bool,
+    #[serde(rename = "_comic", default = "default_string")]
+    pub comic: String,
+    #[serde(rename = "_game", default = "default_string")]
+    pub game: String,
+    #[serde(rename = "_parent", default = "default_string")]
+    pub parent: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommentUser {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub gender: String,
+    pub name: String,
+    pub title: String,
+    pub verified: bool,
+    pub exp: i64,
+    pub level: i64,
+    #[serde(default = "default_vec")]
+    pub characters: Vec<String>,
+    #[serde(default = "avatar_default")]
+    pub avatar: Image,
+    pub role: String,
+}
+
 fn avatar_default() -> Image {
     Image {
         file_server: "".to_string(),
         path: "".to_string(),
         original_name: "".to_string(),
     }
+}
+
+fn default_vec<T>() -> Vec<T> {
+    vec![]
 }
 
 fn default_string() -> String {
