@@ -127,19 +127,14 @@ impl Client {
                 let json: serde_json::Value = serde_json::from_str(resp.text().await?.as_str())?;
                 // println!("{}", &json); // when debug
                 match status.as_u16() {
-                    200 => match path {
-                        "auth/register" => Ok(serde_json::from_str("null")?),
-                        _ => {
-                            let body = json.to_string();
-                            println!("{}", body);
-                            let v = json
-                                .get("data")
-                                .ok_or(Error::from("response data error"))?
-                                .clone();
-                            let r = serde_json::from_value(v)?;
-                            Ok(r)
+                    200 => {
+                        let data = json.get("data");
+                        if data.is_some() {
+                            Ok(serde_json::from_value(data.ok_or("error")?.clone())?)
+                        } else {
+                            Ok(serde_json::from_str("null")?)
                         }
-                    },
+                    }
                     _ => {
                         let message = json
                             .get("message")
@@ -309,5 +304,19 @@ impl Client {
     pub async fn comic_comments(&self, comic_id: String, page: i32) -> Result<CommentsResponse> {
         let url: String = format!("comics/{}/comments?page={}", comic_id, page);
         Ok(self.pica_get(url.as_str()).await?)
+    }
+
+    /// 发表评论
+    pub async fn post_comment(&self, comic_id: String, content: String) -> Result<()> {
+        let url: String = format!("comics/{}/comments", comic_id);
+        self.pica_post(url.as_str(), json!({ "content": content }))
+            .await
+    }
+
+    /// 发表回复
+    pub async fn post_child_comment(&self, comment_id: String, content: String) -> Result<()> {
+        let url: String = format!("comments/{}", comment_id);
+        self.pica_post(url.as_str(), json!({ "content": content }))
+            .await
     }
 }

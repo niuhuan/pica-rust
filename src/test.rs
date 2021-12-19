@@ -147,4 +147,13 @@ mod tests {
                 .await,
         )
     }
+
+    #[tokio::test]
+    async fn post_comment() {
+        print(
+            create_client()
+                .post_comment("5b6bdf4558ed442d899486b7".to_string(), "".to_string())
+                .await,
+        )
+    }
 }
