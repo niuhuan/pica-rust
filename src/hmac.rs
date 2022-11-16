@@ -1,7 +1,7 @@
 extern crate hmac;
 extern crate sha2;
 
-use hmac::{Hmac, Mac, NewMac};
+use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
 type HmacSha256 = Hmac<Sha256>;

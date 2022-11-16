@@ -6,7 +6,7 @@ mod types;
 pub use crate::entities::*;
 pub use crate::types::*;
 use chrono::prelude::Local;
-use futures_util::future::FutureExt;
+use futures_util::FutureExt;
 use hyper::client::connect::dns::GaiResolver;
 use hyper::client::connect::dns::Name;
 use hyper::service::Service;
