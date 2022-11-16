@@ -5,30 +5,43 @@ mod types;
 
 pub use crate::entities::*;
 pub use crate::types::*;
-
-use regex::Regex;
-use std::net::SocketAddr;
-
 use chrono::prelude::Local;
-use reqwest::CustomerDnsOverridesResolver;
+use futures_util::future::FutureExt;
+use hyper::client::connect::dns::GaiResolver;
+use hyper::client::connect::dns::Name;
+use hyper::service::Service;
+use regex::Regex;
+use reqwest::dns::{Addrs, Resolve, Resolving};
+use serde::de::StdError;
 use serde_json::json;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
 const HOST_URL: &str = "https://picaapi.picacomic.com/";
 const API_KEY: &str = "C69BAF41DA5ABD1FFEDC6D2FEA56B";
 const NONCE: &str = "b1ab87b4800d4d4590a11701b8551afa";
 const DIGEST_KEY: &str = "~d}$Q7$eIni=V)9\\RK/P.RM4;9[7|@/CA}b~OW!3?EV`:<>M7pddUBL5n|0/*Cn";
 
+#[derive(Clone)]
 struct DnsOverridesResolver {
     regexp: Regex,
     addr: SocketAddr,
+    hyper_gai_resolver: GaiResolver,
 }
 
-impl CustomerDnsOverridesResolver for DnsOverridesResolver {
-    fn resolve(&self, domain: &str) -> Option<SocketAddr> {
-        if self.regexp.is_match(domain) {
-            Some(self.addr)
+impl Resolve for DnsOverridesResolver {
+    fn resolve(&self, domain: Name) -> Resolving {
+        let mut this = self.clone();
+        if this.regexp.is_match(domain.as_str()) {
+            Box::pin(async move { Ok(Addrs::from(Box::new(vec![this.addr].into_iter()))) })
         } else {
-            None
+            Box::pin(
+                Service::<Name>::call(&mut this.hyper_gai_resolver, domain).map(|result| {
+                    result
+                        .map(|addrs| -> Addrs { Box::new(addrs) })
+                        .map_err(|err| -> Box<dyn StdError + Send + Sync> { Box::new(err) })
+                }),
+            )
         }
     }
 }
@@ -47,7 +60,7 @@ impl Client {
         Self {
             agent: reqwest::ClientBuilder::new().build().unwrap(),
             token: "".to_string(),
-            switch_ip: Option::None,
+            switch_ip: None,
         }
     }
 
@@ -64,9 +77,10 @@ impl Client {
         };
         builder = match switch_address {
             None => builder,
-            Some(address) => builder.resolver(Box::new(DnsOverridesResolver {
+            Some(address) => builder.dns_resolver(Arc::new(DnsOverridesResolver {
                 regexp: Regex::new(r"(.+\.)?picacomic\.com").unwrap(),
                 addr: address.as_str().parse()?,
+                hyper_gai_resolver: GaiResolver::new(),
             })),
         };
         Ok(builder.build()?)
