@@ -29,11 +29,11 @@ use pica::{Client, Sort, SwitchAddress};
 
 async fn main() {
     // 创建客户端并设置分流
-    let mut client = Client::new();
-    client.set_proxy(None, SwitchAddress::ADDRESS1);
+    let client = Client::new();
+    client.set_proxy(None, None);
     // 登录或注入token (选择其一)
     client.login("username", "password").await.unwarp();
-    client.token = "".to_string();
+    client.set_token("token").await;
     // 获取漫画列表
     client.comics(None, None, None, None, Sort::SORT_DEFAULT, 1);
     // ...
