@@ -1,5 +1,4 @@
 extern crate serde;
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::num::ParseIntError;
@@ -12,18 +11,6 @@ impl Sort {
     pub const SORT_TIME_OLDEST: Sort = Sort("da");
     pub const SORT_LIKE_MOST: Sort = Sort("ld");
     pub const SORT_VIVE_MOST: Sort = Sort("vd");
-
-    pub fn as_str(&self) -> &'static str {
-        self.0
-    }
-}
-
-pub struct SwitchAddress(&'static str);
-
-impl SwitchAddress {
-    pub const ADDRESS1: Option<SwitchAddress> = Some(SwitchAddress("172.67.7.24:443"));
-    pub const ADDRESS2: Option<SwitchAddress> = Some(SwitchAddress("104.20.180.50:443"));
-    pub const ADDRESS3: Option<SwitchAddress> = Some(SwitchAddress("172.67.208.169:443"));
 
     pub fn as_str(&self) -> &'static str {
         self.0
