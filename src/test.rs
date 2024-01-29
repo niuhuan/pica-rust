@@ -146,3 +146,14 @@ async fn post_comment() {
             .await,
     )
 }
+
+#[tokio::test]
+async fn advanced_search() {
+    print(
+        create_client()
+            .advanced_search("abc".to_string(), Sort::SORT_DEFAULT, 1, Vec::new())
+            .await,
+    )
+}
+
+

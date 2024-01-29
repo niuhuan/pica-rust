@@ -45,8 +45,9 @@ impl Client {
     }
 
     pub async fn set_token(&self, token: impl Into<String>) {
+        let token_string = token.into();
         let mut token_lock = self.token.write().await;
-        *token_lock = token.into();
+        *token_lock = token_string;
     }
 
     /// 请求和签名
@@ -286,6 +287,27 @@ impl Client {
         let url: String = format!("comments/{}", comment_id);
         self.pica_post(url.as_str(), json!({ "content": content }))
             .await
+    }
+
+    /// 搜索
+    pub async fn advanced_search(
+        &self,
+        content: String,
+        sort: Sort,
+        page: i32,
+        categories: Vec<String>,
+    ) -> Result<ComicSearchResponseData> {
+        let url = format!("comics/advanced-search?page={}", page);
+        Ok(self
+            .pica_post(
+                url.as_str(),
+                json!({
+                    "keyword": content,
+                    "sort": sort.as_str(),
+                    "categories": categories,
+                }),
+            )
+            .await?)
     }
 }
 

@@ -149,7 +149,13 @@ pub struct ComicEpPicturePageResponseData {
     // pub ep: ComicEp // no order, todo
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComicSearchResponseData {
+    pub comics: PageData<ComicInSearch>,
+}
+
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Image {
     pub original_name: String,
@@ -157,7 +163,7 @@ pub struct Image {
     pub file_server: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ComicSimple {
     #[serde(rename = "_id")]
@@ -172,7 +178,7 @@ pub struct ComicSimple {
     pub likes_count: i32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ComicInfo {
     #[serde(rename = "_id")]
@@ -200,6 +206,29 @@ pub struct ComicInfo {
     pub comments_count: i32,
 }
 
+#[derive(Default, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ComicInSearch {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub author: String,
+    pub categories: Vec<String>,
+    #[serde(rename = "chineseTeam")]
+    pub chinese_team: String,
+    pub created_at: String,
+    pub description: String,
+    pub finished: bool,
+    #[serde(rename = "likesCount")]
+    pub likes_count: i64,
+    pub tags: Vec<String>,
+    pub thumb: Image,
+    pub title: String,
+    #[serde(rename = "totalLikes")]
+    pub total_likes: Option<i64>,
+    #[serde(rename = "totalViews")]
+    pub total_views: Option<i64>,
+    pub updated_at: String,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ComicEp {
@@ -211,7 +240,7 @@ pub struct ComicEp {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Creator {
     #[serde(rename = "_id")]
