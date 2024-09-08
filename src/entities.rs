@@ -212,10 +212,11 @@ pub struct ComicInSearch {
     pub id: String,
     pub author: String,
     pub categories: Vec<String>,
-    #[serde(rename = "chineseTeam")]
-    pub chinese_team: Option<String>,
+    #[serde(default, rename = "chineseTeam")]
+    pub chinese_team: String,
     pub created_at: String,
-    pub description: Option<String>,
+    #[serde(default)]
+    pub description: String,
     pub finished: bool,
     #[serde(rename = "likesCount")]
     pub likes_count: i64,
