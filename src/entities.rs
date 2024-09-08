@@ -193,7 +193,9 @@ pub struct ComicInfo {
     pub likes_count: i32,
     #[serde(rename = "_creator")]
     pub creator: Creator,
+    #[serde(default)]
     pub description: String,
+    #[serde(default)]
     pub chinese_team: String,
     pub tags: Vec<String>,
     #[serde(rename = "updated_at")]
@@ -255,8 +257,10 @@ pub struct Creator {
     pub characters: Vec<String>,
     #[serde(default = "avatar_default")]
     pub avatar: Image,
+    #[serde(default)]
     pub slogan: String,
     pub role: String,
+    #[serde(default)]
     pub character: String,
 }
 
