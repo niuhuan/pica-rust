@@ -213,9 +213,9 @@ pub struct ComicInSearch {
     pub author: String,
     pub categories: Vec<String>,
     #[serde(rename = "chineseTeam")]
-    pub chinese_team: String,
+    pub chinese_team: Option<String>,
     pub created_at: String,
-    pub description: String,
+    pub description: Option<String>,
     pub finished: bool,
     #[serde(rename = "likesCount")]
     pub likes_count: i64,
