@@ -212,6 +212,7 @@ pub struct ComicInfo {
 pub struct ComicInSearch {
     #[serde(rename = "_id")]
     pub id: String,
+    #[serde(default)]
     pub author: String,
     pub categories: Vec<String>,
     #[serde(default, rename = "chineseTeam")]
