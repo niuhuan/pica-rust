@@ -184,6 +184,7 @@ pub struct ComicInfo {
     #[serde(rename = "_id")]
     pub id: String,
     pub title: String,
+    #[serde(default)]
     pub author: String,
     pub pages_count: i32,
     pub eps_count: i32,
@@ -212,6 +213,7 @@ pub struct ComicInfo {
 pub struct ComicInSearch {
     #[serde(rename = "_id")]
     pub id: String,
+    #[serde(default)]
     pub author: String,
     pub categories: Vec<String>,
     #[serde(default, rename = "chineseTeam")]
@@ -251,7 +253,7 @@ pub struct Creator {
     pub gender: String,
     pub name: String,
     pub title: String,
-    pub verified: bool,
+    pub verified: Option<bool>,
     pub exp: i32,
     pub level: i32,
     pub characters: Vec<String>,
