@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::num::ParseIntError;
 
 /// 排序方式
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Sort(&'static str);
 
 impl Sort {
@@ -15,6 +15,12 @@ impl Sort {
 
     pub fn as_str(&self) -> &'static str {
         self.0
+    }
+}
+
+impl Default for Sort {
+    fn default() -> Self {
+        Sort::SORT_DEFAULT
     }
 }
 

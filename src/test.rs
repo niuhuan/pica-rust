@@ -42,7 +42,6 @@ async fn create_client() -> Client {
     let username = env::var("PICA_USERNAME").expect("PICA_USERNAME not set");
     let password = env::var("PICA_PASSWORD").expect("PICA_PASSWORD not set");
 
-
     c.login(username.as_str(), password.as_str())
         .await
         .expect("login failed");
@@ -142,6 +141,13 @@ async fn comics() {
         c.comics(None, None, None, None, None, Sort::SORT_DEFAULT, 1)
             .await,
     )
+}
+
+#[tokio::test]
+async fn comics_builder() {
+    let c = create_client().await;
+    let c = c.comics_builder().page(1).sort(Sort::SORT_DEFAULT).await;
+    print(c)
 }
 
 #[tokio::test]

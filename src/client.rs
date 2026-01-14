@@ -1,5 +1,6 @@
 use base64::{engine::general_purpose, Engine as _};
 pub use crate::entities::*;
+use crate::entities::builder::ComicsBuilder;
 pub use crate::types::*;
 use chrono::prelude::Local;
 use hyper::client::connect::dns::GaiResolver;
@@ -89,6 +90,9 @@ impl Client {
     fn default_switch_addresses() -> Vec<SocketAddr> {
         DEFAULT_SWITCH_ADDRESSES
             .iter()
+            .skip(2)
+            .take(1)
+            .chain(DEFAULT_SWITCH_ADDRESSES.iter())
             .filter_map(|addr| addr.parse::<SocketAddr>().ok())
             .collect()
     }
@@ -473,6 +477,34 @@ impl Client {
         let url: String = format!("comics?{}", params.join("&"));
         let data: ComicPageResponseData = self.pica_get(url.as_str()).await?;
         Ok(data.comics)
+    }
+
+    /// 漫画分页 (Builder 返回，可链式设置后直接 `.await`)
+    pub fn comics_builder(&self) -> ComicsBuilder<'_> {
+        ComicsBuilder {
+            client: self,
+            category: None,
+            tag: None,
+            author: None,
+            creator_id: None,
+            chinese_team: None,
+            sort: Sort::SORT_DEFAULT,
+            page: 1,
+        }
+    }
+
+    pub(crate) async fn comics_exec(
+        &self,
+        category: Option<String>,
+        tag: Option<String>,
+        author: Option<String>,
+        creator_id: Option<String>,
+        chinese_team: Option<String>,
+        sort: Sort,
+        page: i32,
+    ) -> Result<PageData<ComicSimple>> {
+        self.comics(category, tag, author, creator_id, chinese_team, sort, page)
+            .await
     }
 
     /// 随机漫画

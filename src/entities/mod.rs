@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod builder;
 pub mod comic;
 pub mod comment;
 pub mod common;
