@@ -72,3 +72,6 @@ let page = client
     .await?;
 println!("docs: {}", page.docs.len());
 ```
+
+在 [client.rs](src/client.rs) 中查看可用的分流列表
+在 [test.rs](src/test.rs) 中的 download_first_comic_cover_and_page , 是从登录到下载的完整demo, 测试时需要设置环境变量
