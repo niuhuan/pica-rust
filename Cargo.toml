@@ -11,11 +11,14 @@ hmac = "0.12"
 hyper = { version = "0.14", features = ["client"] }
 rand = "0.8"
 regex = "1.10"
-reqwest = { version = "0.11", features = ["socks"] }
+reqwest = { version = "0.11", features = ["socks", "trust-dns"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 tokio = { version = "1.35", features = ["macros"] }
 urlencoding = "2.1"
+base64 = "0.21"
+thiserror = "1.0"
 
-[features]
+[dev-dependencies]
+wiremock = "0.6"

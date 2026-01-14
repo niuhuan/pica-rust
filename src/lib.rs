@@ -1,4 +1,5 @@
 pub use client::*;
+pub use entities::*;
 
 mod client;
 mod entities;
