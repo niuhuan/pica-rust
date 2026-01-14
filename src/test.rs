@@ -150,6 +150,52 @@ async fn comics_builder() {
     print(c)
 }
 
+/// 测试 下载第一页第一个漫画的封面和第一章节的第一张图片
+#[tokio::test]
+async fn download_first_comic_cover_and_page() {
+    let c = create_client().await;
+    let comics_page = c
+        .comics(None, None, None, None, None, Sort::SORT_DEFAULT, 1)
+        .await
+        .unwrap();
+    let first = comics_page.docs.first().expect("no comics returned");
+
+    // 下载封面
+    let cover_bytes = c
+        .download_image(first.thumb.file_server.as_str(), first.thumb.path.as_str())
+        .await
+        .unwrap();
+    assert!(!cover_bytes.is_empty());
+    let cover_path = {
+        let mut p = std::env::temp_dir();
+        p.push("pica_cover.jpg");
+        p
+    };
+    std::fs::write(&cover_path, &cover_bytes).unwrap();
+    println!("cover saved to {}", cover_path.display());
+
+    // 获取章节并下载第一页
+    let eps = c.comic_eps(first.id.clone(), 1).await.unwrap();
+    let first_ep = eps.docs.first().expect("no eps");
+    let pictures = c
+        .comic_ep_pictures(first.id.clone(), first_ep.order, 1)
+        .await
+        .unwrap();
+    let first_pic = pictures.docs.first().expect("no pics");
+    let pic_bytes = c
+        .download_image(first_pic.media.file_server.as_str(), first_pic.media.path.as_str())
+        .await
+        .unwrap();
+    assert!(!pic_bytes.is_empty());
+    let pic_path = {
+        let mut p = std::env::temp_dir();
+        p.push("pica_page.jpg");
+        p
+    };
+    std::fs::write(&pic_path, &pic_bytes).unwrap();
+    println!("page saved to {}", pic_path.display());
+}
+
 #[tokio::test]
 async fn comics_random() {
     let c = create_client().await;
